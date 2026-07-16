@@ -134,7 +134,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # --------------------------------------------------------------------------
 # CONEXIÓN A AIRTABLE
 # --------------------------------------------------------------------------
@@ -259,9 +258,78 @@ if "conexion_exitosa" in st.session_state and not st.session_state["conexion_exi
     st.error(f"Error de conexión con Airtable: {st.session_state.get('error_mensaje', 'Desconocido')}")
 
 # --------------------------------------------------------------------------
-# PANEL VISUAL "SEMÁFORO SEMANAL"
+# NUEVO: SECCIÓN "HOY" DESTACADA (Arriba de todo)
 # --------------------------------------------------------------------------
 posts = st.session_state.get("posts", [])
+posts_hoy = [p for p in posts if p["fields"].get("Dia") == dia_semana_esp]
+
+with st.container():
+    st.markdown(f"#### Hoy ({dia_semana_esp})")
+    if not posts_hoy:
+        st.caption("No hay publicaciones planificadas para hoy.")
+    else:
+        for post_hoy in posts_hoy:
+            f_hoy = post_hoy["fields"]
+            record_id_hoy = post_hoy["id"]
+            estado_actual_hoy = f_hoy.get("Estado", "Borrador")
+            color_hoy = COLOR_ESTADO.get(estado_actual_hoy, "#9E9E9E")
+
+            st.markdown(f"""
+            <div class="post-card" style="border-left: 4px solid {color_hoy} !important;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748b;">
+                        {f_hoy.get('Formato', '—')} &nbsp;·&nbsp; {f_hoy.get('Tipo', '—')}
+                    </span>
+                    <span style="background-color: {color_hoy}; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
+                        {estado_actual_hoy}
+                    </span>
+                </div>
+                <h4 style="margin: 0 0 10px 0; font-size: 1.1rem; font-weight: 700; color: #1e293b;">
+                    {f_hoy.get('Titulo', 'Sin Título')}
+                </h4>
+            </div>
+            """, unsafe_allow_html=True)
+
+            copy_hoy = f_hoy.get("Copy", "")
+            if copy_hoy:
+                st.text_area("Texto Copy Hoy", value=copy_hoy, height=100, disabled=True, key=f"text_area_hoy_{record_id_hoy}", label_visibility="collapsed")
+                
+                # Botón Copiar al Portapapeles para el post de hoy
+                js_copy_code_hoy = f"""
+                <script>
+                function copiarTextoHoy_{record_id_hoy}() {{
+                    var dummy = document.createElement("textarea");
+                    document.body.appendChild(dummy);
+                    dummy.value = `{copy_hoy.replace('`', '\\`').replace('$', '\\$')}`;
+                    dummy.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(dummy);
+                    alert("¡Copy copiado al portapapeles con éxito!");
+                }}
+                </script>
+                <button onclick="copiarTextoHoy_{record_id_hoy}()" style="
+                    width: 100%;
+                    background-color: #1e293b;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    font-size: 0.85rem;
+                    cursor: pointer;
+                    margin-bottom: 12px;
+                ">Copiar Copy</button>
+                """
+                st.components.v1.html(js_copy_code_hoy, height=45)
+
+            if f_hoy.get("Multimedia_Link"):
+                st.markdown(f"<p style='font-size: 0.85rem; color: #475569;'><strong>Apoyo visual:</strong> {f_hoy['Multimedia_Link']}</p>", unsafe_allow_html=True)
+
+st.markdown("<hr style='margin-top: 15px; margin-bottom: 15px; border: 0; border-top: 1px solid #cbd5e1;'>", unsafe_allow_html=True)
+
+# --------------------------------------------------------------------------
+# PANEL VISUAL "SEMÁFORO SEMANAL"
+# --------------------------------------------------------------------------
 iniciales_dias = {"Lunes": "L", "Martes": "M", "Miércoles": "M", "Jueves": "J", "Viernes": "V", "Sábado": "S", "Domingo": "D"}
 
 semaforo_html = '<div class="semaforo-container">'
@@ -601,4 +669,5 @@ st.caption(
     f"Última sincronización: "
     f"{st.session_state.get('last_fetch', datetime.now()).strftime('%d-%m-%Y %H:%M:%S')}"
 )
+
 
