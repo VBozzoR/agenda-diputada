@@ -105,6 +105,12 @@ st.markdown("""
         color: #1e293b !important;
         border-bottom-color: #1e293b !important;
     }
+
+   /* Corrección del bug visual "arrow_right" en st.expander */
+    span[data-testid="stIconMaterial"] {
+        display: none !important;
+
+    }
 </style>
 """, unsafe_allow_html=True)
 
