@@ -49,6 +49,19 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
     }
     
+    /* Forzar visibilidad del texto de los guiones y áreas de texto (Copy) */
+    .stTextArea textarea {
+        color: #1e293b !important;
+        background-color: #ffffff !important;
+        -webkit-text-fill-color: #1e293b !important; /* Necesario para iOS/Safari móviles */
+    }
+    
+    /* Estilos para áreas de texto deshabilitadas (las de lectura) */
+    .stTextArea div[data-baseweb="textarea"] {
+        background-color: #f1f5f9 !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+    
     /* Botones más estilizados, planos y modernos */
     .stButton button {
         width: 100%;
@@ -67,12 +80,20 @@ st.markdown("""
         border-color: #94a3b8 !important;
     }
     
-    /* Botón de acción principal (como Guardar o Aprobar) */
-    div[data-testid="stFormSubmitButton"] button, 
-    .btn-aprobar button {
+    /* Botón de guardar en el Creador Express (Formulario) y botones de acción principal */
+    button[data-testid="stFormSubmitButton"] {
         background-color: #1e293b !important;
-        color: #ffffff !important;
         border: none !important;
+        border-radius: 8px !important;
+    }
+
+    button[data-testid="stFormSubmitButton"] p {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
+
+    button[data-testid="stFormSubmitButton"]:hover {
+        background-color: #0f172a !important;
     }
     
     /* Semáforo semanal rediseñado */
@@ -106,13 +127,13 @@ st.markdown("""
         border-bottom-color: #1e293b !important;
     }
 
-   /* Corrección del bug visual "arrow_right" en st.expander */
+    /* SOLUCIÓN AL OVERLAP DEL EXPANDER: Oculta el bug de texto "arrow_right" o "keyboard_arrow_down" */
     span[data-testid="stIconMaterial"] {
         display: none !important;
-
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --------------------------------------------------------------------------
 # CONEXIÓN A AIRTABLE
