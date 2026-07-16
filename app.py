@@ -340,4 +340,3 @@ st.write("")
 st.caption(
     f"Última sincronización: "
     f"{st.session_state.get('last_fetch', datetime.now()).strftime('%d-%m-%Y %H:%M:%S')}"
-)
