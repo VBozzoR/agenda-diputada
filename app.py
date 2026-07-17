@@ -348,13 +348,15 @@ for i, dia in enumerate(DIAS):
         
         # Lógica de colores dinámicos
         if st.session_state["dia_seleccionado"] == dia:
-            # Si está seleccionado: fondo oscuro institucional
+            # SI ESTÁ SELECCIONADO: Fondo oscuro y FORZAMOS texto interior (p) a blanco puro
             estilo_css = f"""
             <style>
                 div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
                     background-color: #1e293b !important;
-                    color: #ffffff !important;
                     border-color: #1e293b !important;
+                }}
+                div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button p {{
+                    color: #ffffff !important;
                 }}
             </style>
             """
@@ -367,8 +369,10 @@ for i, dia in enumerate(DIAS):
             <style>
                 div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
                     background-color: #ffffff !important;
-                    color: {color_texto} !important;
                     border-color: {color_borde} !important;
+                }}
+                div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button p {{
+                    color: {color_texto} !important;
                 }}
             </style>
             """
