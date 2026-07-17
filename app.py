@@ -135,7 +135,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
-# CONEXIÓN A AIRTABLE
+# CONEXIÓN A AIRTABLE CON CACHÉ ULTRA-RÁPIDA (Optimización de apertura)
 # --------------------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def get_table():
@@ -144,10 +144,20 @@ def get_table():
     return table
 
 
-def cargar_posts():
+# Guardamos las publicaciones en memoria por 15 minutos (900 segundos) para carga instantánea
+@st.cache_data(ttl=900, show_spinner=False)
+def obtener_registros_cached():
+    table = get_table()
+    return table.all()
+
+
+def cargar_posts(forzar_recarga=False):
     try:
-        table = get_table()
-        registros = table.all() 
+        # Si se presiona "Actualizar", borramos la caché para traer datos frescos
+        if forzar_recarga:
+            st.cache_data.clear()
+            
+        registros = obtener_registros_cached()
         st.session_state["posts"] = registros
         st.session_state["conexion_exitosa"] = True
     except Exception as e:
@@ -157,8 +167,9 @@ def cargar_posts():
     st.session_state["last_fetch"] = datetime.now()
 
 
+# Carga inicial al abrir la app por primera vez
 if "posts" not in st.session_state:
-    cargar_posts()
+    cargar_posts(forzar_recarga=False)
 
 # --------------------------------------------------------------------------
 # CONSTANTES Y TRADUCCIÓN DE FECHA
