@@ -346,9 +346,9 @@ for i, dia in enumerate(DIAS):
     with cols_semaforo[i]:
         tiene_contenido = any(p["fields"].get("Dia") == dia for p in posts)
         
-        # Lógica de colores dinámicos
+        # Lógica de colores dinámicos (Fondos sólidos)
         if st.session_state["dia_seleccionado"] == dia:
-            # SI ESTÁ SELECCIONADO: Fondo oscuro y FORZAMOS texto interior (p) a blanco puro
+            # SI ESTÁ SELECCIONADO: Fondo azul oscuro y letra blanca
             estilo_css = f"""
             <style>
                 div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
@@ -361,18 +361,30 @@ for i, dia in enumerate(DIAS):
             </style>
             """
             st.markdown(estilo_css, unsafe_allow_html=True)
+        elif tiene_contenido:
+            # SI TIENE CONTENIDO (Y no está seleccionado): Fondo verde esmeralda y letra blanca
+            estilo_css = f"""
+            <style>
+                div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
+                    background-color: #16a34a !important;
+                    border-color: #16a34a !important;
+                }}
+                div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button p {{
+                    color: #ffffff !important;
+                }}
+            </style>
+            """
+            st.markdown(estilo_css, unsafe_allow_html=True)
         else:
-            # Si no está seleccionado: verde si tiene contenido, gris si está vacío
-            color_borde = "#16a34a" if tiene_contenido else "#cbd5e1"
-            color_texto = "#16a34a" if tiene_contenido else "#94a3b8"
+            # SI ESTÁ VACÍO: Mantiene el diseño limpio original (Fondo blanco, borde sutil y letra gris)
             estilo_css = f"""
             <style>
                 div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
                     background-color: #ffffff !important;
-                    border-color: {color_borde} !important;
+                    border-color: #cbd5e1 !important;
                 }}
                 div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button p {{
-                    color: {color_texto} !important;
+                    color: #94a3b8 !important;
                 }}
             </style>
             """
