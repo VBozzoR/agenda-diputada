@@ -33,6 +33,19 @@ st.markdown("""
         max-width: 680px;
     }
     
+    /* FORZAR COLUMNAS HORIZONTALES EN MÓVILES (Parche Semáforo) */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+    }
+    
+    div[data-testid="stHorizontalBlock"] > div {
+        min-width: 0 !important;
+        flex: 1 !important;
+    }
+    
     /* Títulos y fuentes más institucionales */
     h1, h2, h3, h4, h5, p, span, label {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
@@ -128,7 +141,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
 # --------------------------------------------------------------------------
 # CONEXIÓN A AIRTABLE CON CACHÉ ULTRA-RÁPIDA (Optimización de apertura)
 # --------------------------------------------------------------------------
