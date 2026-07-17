@@ -80,6 +80,20 @@ st.markdown("""
         border-color: #94a3b8 !important;
     }
     
+    /* Estilo especial para los botones del semáforo */
+    div.btn-semaforo button {
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
+        font-size: 0.95rem !important;
+        font-weight: 700 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    
     /* Botón de guardar en el Creador Express (Formulario) y botones de acción principal */
     button[data-testid="stFormSubmitButton"] {
         background-color: #1e293b !important;
@@ -94,25 +108,6 @@ st.markdown("""
 
     button[data-testid="stFormSubmitButton"]:hover {
         background-color: #0f172a !important;
-    }
-    
-    /* Semáforo semanal rediseñado */
-    .semaforo-container {
-        display: flex;
-        justify-content: space-between;
-        background-color: #ffffff;
-        padding: 12px 16px;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
-    
-    .semaforo-dia {
-        text-align: center;
-        font-weight: 700;
-        font-size: 0.9rem;
-        flex: 1;
     }
     
     /* Pestañas estilizadas */
@@ -144,7 +139,6 @@ def get_table():
     return table
 
 
-# Guardamos las publicaciones en memoria por 15 minutos (900 segundos) para carga instantánea
 @st.cache_data(ttl=900, show_spinner=False)
 def obtener_registros_cached():
     table = get_table()
@@ -153,7 +147,6 @@ def obtener_registros_cached():
 
 def cargar_posts(forzar_recarga=False):
     try:
-        # Si se presiona "Actualizar", borramos la caché para traer datos frescos
         if forzar_recarga:
             st.cache_data.clear()
             
@@ -167,7 +160,6 @@ def cargar_posts(forzar_recarga=False):
     st.session_state["last_fetch"] = datetime.now()
 
 
-# Carga inicial al abrir la app por primera vez
 if "posts" not in st.session_state:
     cargar_posts(forzar_recarga=False)
 
@@ -180,11 +172,11 @@ TIPOS = ["Contingencia", "Trabajo Territorial", "Agenda Legislativa", "Personal/
 ESTADOS = ["Borrador", "Listo para Aprobación", "Aprobado", "Publicado", "Pausado por Contingencia"]
 
 COLOR_ESTADO = {
-    "Borrador": "#64748b",                  # Gris pizarra neutro
-    "Listo para Aprobación": "#ea580c",     # Naranja elegante
-    "Aprobado": "#16a34a",                  # Verde esmeralda
-    "Publicado": "#2563eb",                 # Azul real
-    "Pausado por Contingencia": "#dc2626",  # Rojo oscuro
+    "Borrador": "#64748b",
+    "Listo para Aprobación": "#ea580c",
+    "Aprobado": "#16a34a",
+    "Publicado": "#2563eb",
+    "Pausado por Contingencia": "#dc2626",
 }
 
 DIAS_TRADUCCION = {
@@ -203,6 +195,10 @@ mes_ing = ahora.strftime("%B")
 dia_semana_esp = DIAS_TRADUCCION.get(dia_semana_ing, dia_semana_ing)
 mes_esp = MESES_TRADUCCION.get(mes_ing, mes_ing)
 fecha_actual_texto = f"Hoy es {dia_semana_esp}, {ahora.day} de {mes_esp} de {ahora.year}"
+
+# Inicializar el día seleccionado por defecto al día de hoy si no existe
+if "dia_seleccionado" not in st.session_state:
+    st.session_state["dia_seleccionado"] = dia_semana_esp
 
 # --------------------------------------------------------------------------
 # HELPERS DE AIRTABLE
@@ -269,7 +265,7 @@ if "conexion_exitosa" in st.session_state and not st.session_state["conexion_exi
     st.error(f"Error de conexión con Airtable: {st.session_state.get('error_mensaje', 'Desconocido')}")
 
 # --------------------------------------------------------------------------
-# NUEVO: SECCIÓN "HOY" DESTACADA (Arriba de todo)
+# SECCIÓN "HOY" DESTACADA (Arriba de todo)
 # --------------------------------------------------------------------------
 posts = st.session_state.get("posts", [])
 posts_hoy = [p for p in posts if p["fields"].get("Dia") == dia_semana_esp]
@@ -305,7 +301,6 @@ with st.container():
             if copy_hoy:
                 st.text_area("Texto Copy Hoy", value=copy_hoy, height=100, disabled=True, key=f"text_area_hoy_{record_id_hoy}", label_visibility="collapsed")
                 
-                # Botón Copiar al Portapapeles para el post de hoy
                 js_copy_code_hoy = f"""
                 <script>
                 function copiarTextoHoy_{record_id_hoy}() {{
@@ -339,25 +334,60 @@ with st.container():
 st.markdown("<hr style='margin-top: 15px; margin-bottom: 15px; border: 0; border-top: 1px solid #cbd5e1;'>", unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------
-# PANEL VISUAL "SEMÁFORO SEMANAL"
+# NUEVO: SEMÁFORO SEMANAL INTERACTIVO (Botonera de Navegación por Día)
 # --------------------------------------------------------------------------
+st.markdown("<p style='font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; text-align: center; color: #475569;'>Planificación de la Semana</p>", unsafe_allow_html=True)
+
 iniciales_dias = {"Lunes": "L", "Martes": "M", "Miércoles": "M", "Jueves": "J", "Viernes": "V", "Sábado": "S", "Domingo": "D"}
 
-semaforo_html = '<div class="semaforo-container">'
-for dia in DIAS:
-    tiene_contenido = any(p["fields"].get("Dia") == dia for p in posts)
-    color_texto = "#16a34a" if tiene_contenido else "#cbd5e1"  
-    semaforo_html += f'<div class="semaforo-dia" style="color: {color_texto};">{iniciales_dias[dia]}</div>'
-semaforo_html += '</div>'
+# Dibujamos los 7 botones del semáforo lado a lado
+cols_semaforo = st.columns(7)
+for i, dia in enumerate(DIAS):
+    with cols_semaforo[i]:
+        tiene_contenido = any(p["fields"].get("Dia") == dia for p in posts)
+        
+        # Lógica de colores dinámicos
+        if st.session_state["dia_seleccionado"] == dia:
+            # Si está seleccionado: fondo oscuro institucional
+            estilo_css = f"""
+            <style>
+                div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
+                    background-color: #1e293b !important;
+                    color: #ffffff !important;
+                    border-color: #1e293b !important;
+                }}
+            </style>
+            """
+            st.markdown(estilo_css, unsafe_allow_html=True)
+        else:
+            # Si no está seleccionado: verde si tiene contenido, gris si está vacío
+            color_borde = "#16a34a" if tiene_contenido else "#cbd5e1"
+            color_texto = "#16a34a" if tiene_contenido else "#94a3b8"
+            estilo_css = f"""
+            <style>
+                div[data-testid="stHorizontalBlock"] > div:nth-child({i+1}) button {{
+                    background-color: #ffffff !important;
+                    color: {color_texto} !important;
+                    border-color: {color_borde} !important;
+                }}
+            </style>
+            """
+            st.markdown(estilo_css, unsafe_allow_html=True)
+            
+        st.markdown('<div class="btn-semaforo">', unsafe_allow_html=True)
+        if st.button(iniciales_dias[dia], key=f"btn_nav_{dia}"):
+            st.session_state["dia_seleccionado"] = dia
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown(semaforo_html, unsafe_allow_html=True)
+st.write("")
 
 col_a, col_b = st.columns([3, 1])
 with col_a:
-    st.caption("Gestión de contenido de forma visual y rápida")
+    st.caption(f"Visualizando: **{st.session_state['dia_seleccionado']}** (Toca una letra para cambiar)")
 with col_b:
     if st.button("Actualizar", use_container_width=True):
-        cargar_posts()
+        cargar_posts(forzar_recarga=True)
         st.rerun()
 
 # --------------------------------------------------------------------------
@@ -373,7 +403,9 @@ tab1, tab2, tab3 = st.tabs(["Agenda Semanal", "Creador Express", nombre_tab_dipu
 # PESTAÑA 1: AGENDA SEMANAL
 # ============================================================================
 with tab1:
-    st.markdown("#### Agenda Semanal")
+    # Usamos el día del estado interno del semáforo
+    dia_actual_agenda = st.session_state["dia_seleccionado"]
+    st.markdown(f"#### Planificación: {dia_actual_agenda}")
 
     # Módulo de Limpieza de Semana Completa
     if posts:
@@ -396,25 +428,17 @@ with tab1:
                         st.session_state["confirmar_limpieza_global"] = False
                         st.rerun()
 
-    if not posts:
-        st.info("No hay posts cargados todavía. Usa Creador Express para crear el primero.")
+    posts_dia = [p for p in posts if p["fields"].get("Dia") == dia_actual_agenda]
+
+    if not posts_dia:
+        st.info(f"No hay publicaciones agendadas para el {dia_actual_agenda}.")
     else:
-        # Filtro compacto por día
-        dia_seleccionado = st.selectbox("Selecciona un día para visualizar", DIAS)
-        posts_dia = [p for p in posts if p["fields"].get("Dia") == dia_seleccionado]
-
-        st.markdown(f"##### Planificación para el {dia_seleccionado}")
-
-        if not posts_dia:
-            st.caption(f"No hay publicaciones agendadas para el {dia_seleccionado}.")
-        
         for post in posts_dia:
             f = post["fields"]
             record_id = post["id"]
             estado_actual = f.get("Estado", "Borrador")
             color = COLOR_ESTADO.get(estado_actual, "#9E9E9E")
 
-            # Renderizado de Tarjeta Premium
             st.markdown(f"""
             <div class="post-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -432,12 +456,10 @@ with tab1:
             """, unsafe_allow_html=True)
 
             with st.container():
-                # Copy
                 copy_texto = f.get("Copy", "")
                 if copy_texto:
                     st.text_area("Texto Copy", value=copy_texto, height=120, disabled=True, key=f"text_area_{record_id}", label_visibility="collapsed")
                     
-                    # Botón Copiar al Portapapeles (Inyectado con JavaScript)
                     js_copy_code = f"""
                     <script>
                     function copiarTexto_{record_id}() {{
@@ -461,18 +483,15 @@ with tab1:
                         font-size: 0.85rem;
                         cursor: pointer;
                         margin-bottom: 12px;
-                        transition: background-color 0.2s;
                     ">Copiar Copy</button>
                     """
                     st.components.v1.html(js_copy_code, height=45)
 
-                # Apoyo Visual
                 if f.get("Multimedia_Link"):
                     st.markdown(f"<p style='font-size: 0.85rem; margin-top: -5px; color: #475569;'><strong>Apoyo visual:</strong> {f['Multimedia_Link']}</p>", unsafe_allow_html=True)
 
                 st.write("") 
 
-                # Fila de botones de control rápidos
                 col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
                 
                 with col_btn1:
@@ -492,7 +511,6 @@ with tab1:
                     if st.button("Eliminar", key=f"confirm_del_{record_id}"):
                         st.session_state[f"confirmar_eliminar_{record_id}"] = True
 
-                # --- MÓDULO DE EDICIÓN DIRECTA ---
                 if st.session_state.get(f"editando_{record_id}", False):
                     with st.form(f"form_editar_{record_id}"):
                         st.write("**Editar Publicación**")
@@ -528,7 +546,6 @@ with tab1:
                             st.session_state[f"editando_{record_id}"] = False
                             st.rerun()
 
-                # --- CONFIRMACIÓN DE ELIMINACIÓN ---
                 if st.session_state.get(f"confirmar_eliminar_{record_id}", False):
                     st.warning("¿Estás seguro de que deseas eliminar este post de forma definitiva?")
                     col_del_si, col_del_no = st.columns(2)
@@ -641,7 +658,6 @@ with tab3:
 
             col1, col2 = st.columns(2)
             with col1:
-                # Botón de aprobación estilizado
                 if st.button("Aprobar", key=f"aprobar_{record_id}", use_container_width=True):
                     if actualizar_registro(record_id, {"Estado": "Aprobado"}):
                         st.toast("Post aprobado")
@@ -680,5 +696,3 @@ st.caption(
     f"Última sincronización: "
     f"{st.session_state.get('last_fetch', datetime.now()).strftime('%d-%m-%Y %H:%M:%S')}"
 )
-
-
