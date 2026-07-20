@@ -1,0 +1,15 @@
+name: Keep Streamlit Alive
+
+on:
+  schedule:
+    # Se ejecuta todos los días a las 08:00 y a las 20:00 UTC
+    - cron: '0 8,20 * * *'
+  workflow_dispatch: # Permite ejecutarlo manualmente si quieres
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping App
+        run: |
+          curl -s -L -A "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1" "https://agenda-chp.streamlit.app/?keep_alive=true" > /dev/null
